@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sketch to AI Image</title>
+  <style>
+    canvas { border: 2px solid black; }
+    #resultImage { margin-top: 20px; max-width: 100%; }
+  </style>
+</head>
+<body>
+  <h2>Sketch Your Idea!</h2>
+  <canvas id="sketchCanvas" width="400" height="400"></canvas><br>
+  <button onclick="clearCanvas()">Reset</button>
+  <button onclick="generateImage()">Generate</button><br><br>
+  <img id="resultImage">
+  <a id="downloadBtn" download="ai-image.png" style="display:none;">Download</a>
+
+  <script>
+    const canvas = document.getElementById("sketchCanvas");
+    const ctx = canvas.getContext("2d");
+    let drawing = false;
+
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "black";
+    ctx.lineCap = "round";
+
+    canvas.onmousedown = () => drawing = true;
+    canvas.onmouseup = () => { drawing = false; ctx.beginPath(); };
+    canvas.onmousemove = draw;
+
+    function draw(e) {
+      if (!drawing) return;
+      ctx.lineTo(e.offsetX, e.offsetY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(e.offsetX, e.offsetY);
+    }
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      document.getElementById("resultImage").src = "";
+      document.getElementById("downloadBtn").style.display = "none";
+    }
+
+    async function generateImage() {
+      const dataUrl = canvas.toDataURL("image/png");
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: dataUrl })
+      });
+
+      const data = await res.json();
+      if (data.output) {
+        const img = document.getElementById("resultImage");
+        img.src = data.output;
+        const download = document.getElementById("downloadBtn");
+        download.href = data.output;
+        download.style.display = "inline";
+      } else {
+        alert("Gagal generate gambar");
+      }
+    }
+  </script>
+</body>
+</html>
